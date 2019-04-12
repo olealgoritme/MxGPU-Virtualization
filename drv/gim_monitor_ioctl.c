@@ -54,11 +54,11 @@ char *amdgim_commands[AMDGIM_COMMAND_LEN] = {
 
 void amdgim_mutex_get_lock(struct amdgim_mutex_lock *mutexlock)
 {
-	struct timeval curr_t;
+	struct timespec64 curr_t;
 
 	do {
 		spin_lock(&mutexlock->atom_lock);
-		do_gettimeofday(&curr_t);
+		ktime_get_raw_ts64(&curr_t);
 		/* if last_time.tv_sec ==0, it would never be timed out */
 		if (mutexlock->locked == true &&
 			mutexlock->timeout_start.tv_sec > 0 &&
@@ -91,7 +91,7 @@ void amdgim_mutex_get_lock(struct amdgim_mutex_lock *mutexlock)
 void amdgim_mutex_start_timeout(struct amdgim_mutex_lock *mutexlock)
 {
 	spin_lock(&mutexlock->atom_lock);
-	do_gettimeofday(&mutexlock->timeout_start);
+	ktime_get_raw_ts64(&mutexlock->timeout_start);
 	spin_unlock(&mutexlock->atom_lock);
 }
 

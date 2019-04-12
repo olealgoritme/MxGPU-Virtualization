@@ -28,6 +28,8 @@ LINUXINCLUDE := $(LINUXINCLUDE) -I$(src)/asic_reg
 #ccflags-y += -DCONFIG_GIM_HEARTBEAT_TIMER
 #ccflags-y += -D DRV_VERSION=1.0
 #ccflags-y += -DCONFIG_MMIO_QEMU_SECURITY
+ccflags-y += -Wno-implicit-function-declaration
+
 
 PWD := $(shell pwd)
 

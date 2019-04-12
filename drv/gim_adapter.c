@@ -36,6 +36,7 @@
 #include <linux/mod_devicetable.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
+#include <linux/time.h>
 
 #include "gim_adapter.h"
 #include "gim_os_service.h"
@@ -1630,8 +1631,8 @@ static const unsigned int gpu_hang_check_list[GPU_STATUS_SIZE] = {
 
 static int wait_cmd_complete(struct function *func)
 {
-	struct timespec start_time;
-	struct timespec delta_time;
+	struct timespec64 start_time;
+	struct timespec64 delta_time;
 
 	uint32_t time_out = 2; /* 2 seconds */
 	kcl_type_u8 command;
@@ -1640,7 +1641,7 @@ static int wait_cmd_complete(struct function *func)
 	uint32_t status;
 	struct adapter *adapt = func->adapt;
 
-	getnstimeofday(&start_time);
+	ktime_get_raw_ts64(&start_time);
 
 	pci_read_config_dword(adapt->pf.pci_dev, 4, &status);
 	gim_dbg("Cmd/Status @ 4 = 0x%08x\n", status);
@@ -1748,7 +1749,7 @@ int run_vf(struct function *func)
 	ret = wait_cmd_complete(func);
 
 	/* record time of start to run vf */
-	getnstimeofday(&(func->time_log.active_last_tick));
+	ktime_get_raw_ts64(&(func->time_log.active_last_tick));
 
 	if (is_pf) {
 		uint32_t tlb_control = pf_read_register(adapt,
@@ -1770,7 +1771,7 @@ int idle_vf(struct function *func)
 {
 	int  is_pf;
 	uint32_t status;
-	struct timespec tmp;
+    struct timespec64 tmp;
 	struct adapter *adapt;
 
 	adapt = func->adapt;
@@ -1795,10 +1796,12 @@ int idle_vf(struct function *func)
 
 	/* record current vf active time*/
 	if (func->time_log.active_last_tick.tv_sec != 0) {
-		getnstimeofday(&tmp);
-		tmp = timespec_sub(tmp, func->time_log.active_last_tick);
-		func->time_log.active_time =
-			timespec_add(func->time_log.active_time, tmp);
+		ktime_get_raw_ts64(&tmp);
+		/*tmp = */
+        tmp  = timespec64_sub(tmp, func->time_log.active_last_tick);
+		/* tmp2 = timespec64_add(tmp, ns); */
+        func->time_log.active_time = tmp;
+            
 
 		/* clear last tick record, in case of twice idle */
 		func->time_log.active_last_tick.tv_sec = 0;
@@ -3977,12 +3980,12 @@ void dump_scratch_ram(struct adapter *adapt,
 	}
 }
 
-struct timespec time_elapsed(struct timespec *ts_start)
+struct timespec64 time_elapsed(struct timespec64 *ts_start)
 {
-	struct timespec ts_end;
-	struct timespec ts_diff;
+	struct timespec64 ts_end;
+	struct timespec64 ts_diff;
 
-	getnstimeofday(&ts_end);
+	ktime_get_raw_ts64(&ts_end);
 	ts_diff.tv_sec = ts_end.tv_sec - ts_start->tv_sec;
 	if (ts_start->tv_nsec > ts_end.tv_nsec) {
 		--ts_diff.tv_sec;
@@ -3998,8 +4001,8 @@ struct timespec time_elapsed(struct timespec *ts_start)
 /* If lock available return 1, if can't lock return 0 */
 int amd_try_spinlock(spinlock_t *lock, uint32_t usec_timeout)
 {
-	struct timespec start_time;
-	struct timespec elapsed_time;
+	struct timespec64 start_time;
+	struct timespec64 elapsed_time;
 
 	/* check the lock */
 	if (spin_trylock(lock))
@@ -4008,7 +4011,7 @@ int amd_try_spinlock(spinlock_t *lock, uint32_t usec_timeout)
 	/* Lock is busy */
 	gim_warn("Lock is busy\n");
 	/* Get the current time */
-	getnstimeofday(&start_time);
+	ktime_get_raw_ts64(&start_time);
 	/* loop checking lock and time until timeout */
 	elapsed_time.tv_sec = 0;
 	elapsed_time.tv_nsec = 0;

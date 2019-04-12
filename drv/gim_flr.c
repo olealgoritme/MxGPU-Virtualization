@@ -20,6 +20,7 @@
  * THE SOFTWARE
  */
 
+#define _GNU_SOURCE
 #include <linux/pci.h>
 #include <linux/pci-aspm.h>
 #include <linux/delay.h>
@@ -308,7 +309,7 @@ int gim_vf_flr(struct adapter *adapt, struct function *vf)
 	unsigned int sdma1_gfx_doorbell;
 	unsigned int rlc_cgcg_cgls_ctrl;
 	unsigned int cp_cpc_ic[4];
-
+    
 	rlc_cgcg_cgls_ctrl = pf_read_register(adapt, mmRLC_CGCG_CGLS_CTRL);
 
 	sdma0_gfx_doorbell = pf_read_register(adapt, mmSDMA0_GFX_DOORBELL);
@@ -320,8 +321,7 @@ int gim_vf_flr(struct adapter *adapt, struct function *vf)
 
 	/* save FLR state */
 	gim_save_flr_state(adapt, vf);
-
-	do_gettimeofday(&vf->time_log.reset_time);
+    ktime_get_raw_ts64(&vf->time_log.reset_time);
 	vf->time_log.reset_count++;
 
 	/* do the FLR */

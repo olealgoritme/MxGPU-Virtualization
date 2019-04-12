@@ -950,7 +950,7 @@ static int amdgim_op_gpuvf_vf(char *param, void *obj, void *result)
 	unsigned int temp;
 	unsigned int vf_candidate;
 
-	struct timeval cur_time;
+	struct timespec64 cur_time;
 	struct function *p_func;
 	struct partition *part;
 	struct adapter *p_adapter;
@@ -994,7 +994,7 @@ static int amdgim_op_gpuvf_vf(char *param, void *obj, void *result)
 			AMDGIM_STR_NA, AMDGIM_STRLEN_LONG - 1);
 
 	vfdetail->time_log = p_func->time_log;
-	do_gettimeofday(&cur_time);
+    ktime_get_raw_ts64(&cur_time);
 
 	if (vfdetail->vf_state)
 		vfdetail->vf_running_section = cur_time.tv_sec
